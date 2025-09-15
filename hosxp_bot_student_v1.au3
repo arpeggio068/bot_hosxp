@@ -16,7 +16,6 @@
 #include <GUIConstantsEx.au3>
 #include <StaticConstants.au3>
 #include <WindowsConstants.au3>
-#include <Inet.au3>
 #include <CppKeySend.au3>
 
 Opt("MouseCoordMode", 1)
@@ -88,7 +87,7 @@ Global $iSleepAfterLoad = $iDefaultValue7
 Global $iAddFluoride = $iDefaultValue8
 ;=============================== end GUI config ========================================================================
 
-Global $oErr = ObjEvent("AutoIt.Error", "_ComErrHandler")
+
 Global $aXpPos = [-8, -8, 1552, 840]
 Global $sHosXp_Title = "BMS-HOSxP XE 4.0"
 Global $sServer_Title = 'AutoIt Server'
@@ -103,9 +102,20 @@ Global $oLogStudent
 Global $oLogStudentProgress
 Global $oLogPrice
 Global $oWorkbook
-
 Global $iMaxRecTime = 4*60*1000 ; 4 min
 
+;=== start telegram and database request config ===============================================
+Global $gEnvCache = 0       ; เก็บ cache (Dictionary ของ KEY=VALUE)
+Global $gEnvFile = @ScriptDir & "\server\.env"
+Global $gEnvTimestamp = ""  ; เวลาล่าสุดของไฟล์
+Global $gTelegramToken = ""
+Global $gTelegramChatID = ""
+Global $gHTTPTelegram = ObjCreate("WinHttp.WinHttpRequest.5.1")
+Global $gHTTPNode = ObjCreate("WinHttp.WinHttpRequest.5.1")
+Global $oErr = ObjEvent("AutoIt.Error", "_ComErrHandler")
+;=== end telegram  and database request config ===============================================
+
+;=== start picture config ==============================================================
 ;Global $sDtMenu = "\Match\xp_dental_menu.png"  ;ไม่ใช้
 Global $sFoundVisit = "\Match\xp_hn_found_visit.png"   ;รูปชายหญิง
 Global $aFvFirstPos = [0, 81,75,169] ;start loop position
@@ -144,6 +154,7 @@ Global $sFinalSave2 =   "\Match\xp_final_save2.png"  ;ภาพติ๊กถ�
 Global $aFinalS2Pos = [420, 275, 761, 499]
 Global $sLastOK =   "\Match\xp_lastOK.png"
 Global $aLastOkPos = [311, 18, 1068, 600]
+;=== end picture config =================================================================
 
 Global $ArraySit[13]  ;สิทธิที่ต้องแก้ค่าบริการ 50 บาทเป็น 0 บาท ส่งกลับบ้าน 103
 $ArraySit[0] = "40"  ;เบิกได้
@@ -168,7 +179,7 @@ $ArraySitKrg[3] = "35"  ; ขรก.กกต.
 $ArraySitKrg[4] = "25o"  ;นักเรียน นอกเขต  o=op anywhere ต่างจังหวัด
 $ArraySitKrg[5] = "47o"  ;เด็ก 0-12 ปี นอกเขต  o=op anywhere ต่างจังหวัด
 
-;=============================== start utility function ========================================================================
+;=============================== start utility function ==============================================================================================
 Func Hkey()
 	AdlibUnRegister("ContXp1")
 	FileClose($oLogStudent)
@@ -322,15 +333,70 @@ Func ExitMaxTime($hTime, $oFile, $iRow)
 	EndIf
 EndFunc
 
-Func SendTeleGram($sMessage)
-Local $sToken = ""
-Local $sChatID = "-"
-Local $sURL = "https://api.telegram.org/bot" & $sToken & "/sendMessage?chat_id=" & $sChatID & "&text=" & $sMessage
-; Send the request
-Local $sResponse = InetRead($sURL)
-;ConsoleWrite(BinaryToString($sResponse) & @CRLF)
+;=============== send request telegram func ==========================================
+Func LoadEnv($sFile = ".env")
+    Local $aLines, $sLine, $aPart
+
+    If Not FileExists($sFile) Then
+        Return SetError(1, 0, 0)
+    EndIf
+
+    $aLines = FileReadToArray($sFile)
+    If @error Then Return SetError(2, 0, 0)
+
+    ; สร้าง Dictionary สำหรับเก็บ key/value
+    Local $oMap = ObjCreate("Scripting.Dictionary")
+
+    For $i = 0 To UBound($aLines) - 1
+        $sLine = StringStripWS($aLines[$i], 3)
+        If $sLine = "" Or StringLeft($sLine, 1) = "#" Then ContinueLoop
+
+        $aPart = StringSplit($sLine, "=", 2)
+        If UBound($aPart) = 2 Then
+            $oMap($aPart[0]) = $aPart[1]
+        EndIf
+    Next
+
+    $gEnvCache = $oMap
+    $gEnvFile = $sFile
+    $gEnvTimestamp = FileGetTime($sFile, 0, 1) ; บันทึก timestamp
+
+    Return $oMap
 EndFunc
 
+Func GetEnv($sKey)
+    ; --- โหลด cache ถ้ายังไม่ถูกสร้าง ---
+    If Not IsObj($gEnvCache) Then
+        $gEnvCache = LoadEnv($gEnvFile)
+    EndIf
+
+    ; --- ตรวจสอบไฟล์ถูกแก้ไขใหม่หรือไม่ ---
+    Local $sCurrentTime = FileGetTime($gEnvFile, 0, 1)
+    If $sCurrentTime <> $gEnvTimestamp Then
+        $gEnvCache = LoadEnv($gEnvFile)
+    EndIf
+
+    ; --- คืนค่า value ---
+    If $gEnvCache.Exists($sKey) Then
+        Return $gEnvCache($sKey)
+    EndIf
+
+    Return ""
+EndFunc
+
+Func SendTeleGram($sMessage)
+    If $gTelegramToken = "" Or $gTelegramChatID = "" Then Return
+
+    Local $sURL = "https://api.telegram.org/bot" & $gTelegramToken & "/sendMessage?chat_id=" & $gTelegramChatID & "&text=" & $sMessage
+
+    $gHTTPTelegram.Open("GET", $sURL, False)
+    $gHTTPTelegram.SetTimeouts(5000, 5000, 5000, 10000) ; timeout: resolve, connect, send, receive
+    $gHTTPTelegram.Send()
+    ;ConsoleWrite("Telegram response: " & $gHTTPTelegram.ResponseText & @CRLF)
+EndFunc
+;=============== send request telegram func ==========================================
+
+;=============== send request nodejs localhost func ======================================
 Func StartServer()
 	Local $aList = WinList($sServer_Title) ;Winlist all hos os
 	;_ArrayDisplay($aList)
@@ -381,16 +447,16 @@ Func MsgStopServer()
 EndFunc
 
 Func QueryPostgres1($sSQL)
-    Local $oHTTP = ObjCreate("WinHttp.WinHttpRequest.5.1")
+    ;Local $oHTTP = ObjCreate("WinHttp.WinHttpRequest.5.1")
     Local $sUrl = "http://localhost:3074/query"
     Local $sData = '{"sql":"' & StringReplace($sSQL, '"', '\"') & '"}'
 
-    $oHTTP.Open("POST", $sUrl, False)
-    $oHTTP.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
-    $oHTTP.Send($sData)
+    $gHTTPNode.Open("POST", $sUrl, False)
+    $gHTTPNode.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
+    $gHTTPNode.Send($sData)
 
     ; ใช้ ResponseBody (Binary) → ADODB.Stream → UTF-8 → Unicode
-    Local $bResponse = $oHTTP.ResponseBody
+    Local $bResponse = $gHTTPNode.ResponseBody
     Local $oStream = ObjCreate("ADODB.Stream")
     $oStream.Type = 1          ; adTypeBinary
     $oStream.Open
@@ -405,19 +471,19 @@ Func QueryPostgres1($sSQL)
 EndFunc
 
 Func QueryPostgres2($sSQL)
-    Local $oHTTP = ObjCreate("WinHttp.WinHttpRequest.5.1")
+    ;Local $oHTTP = ObjCreate("WinHttp.WinHttpRequest.5.1")
     Local $sUrl = "http://localhost:3074/query"
     Local $sData = '{"sql":"' & StringReplace($sSQL, '"', '\"') & '"}'
     ; ตั้ง timeout: resolve=5s, connect=5s, send=5s, receive=10s
-    $oHTTP.SetTimeouts(5000, 5000, 5000, 10000)
+    $gHTTPNode.SetTimeouts(5000, 5000, 5000, 10000)
     Local $sResponse = ""
     ; ลองส่ง request ถ้า COM error จะไปเข้าที่ _ComErrHandler
-    $oHTTP.Open("POST", $sUrl, False)
-    $oHTTP.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
-    $oHTTP.Send($sData)
+    $gHTTPNode.Open("POST", $sUrl, False)
+    $gHTTPNode.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
+    $gHTTPNode.Send($sData)
 
     If Not @error Then
-        $sResponse = $oHTTP.ResponseText
+        $sResponse = $gHTTPNode.ResponseText
     EndIf
 
     If $sResponse = "" Then
@@ -511,13 +577,14 @@ Func GetSitFromDb2($iHnVal, $oFile, $iRow)
 
     Return $ArrayDb
 EndFunc
+;=============== send request nodejs localhost func ======================================
 
 Func _ComErrHandler($oError)
     ; เวลามี COM error (เช่น timeout) ให้เก็บ error message ไว้
     ConsoleWrite("COM Error: " & $oError.description & @CRLF)
     ; คืนค่าเฉย ๆ เพื่อไม่ให้ AutoIt หยุดทำงาน
 EndFunc
-;=============================== end utility function ========================================================================
+;=============================== end utility function =====================================================================================
 
 ;=============================== start preload function ======================================================================
 Func HideExcel()
@@ -1596,6 +1663,8 @@ WEnd
 
 _OpenCV_Startup()  ;
 _CppDllOpen()
+$gTelegramToken = GetEnv("TELEGRAM_TOKEN")
+$gTelegramChatID = GetEnv("TELEGRAM_CHAT")
 StartServer()
 Sleep(1000)
 BotLoop()

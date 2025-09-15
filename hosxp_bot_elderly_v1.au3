@@ -294,12 +294,12 @@ Func ExitMaxTime($hTime, $oFile, $iRow)
 EndFunc
 
 Func SendTeleGram($sMessage)
-Local $sToken = ""
-Local $sChatID = "-"
-Local $sURL = "https://api.telegram.org/bot" & $sToken & "/sendMessage?chat_id=" & $sChatID & "&text=" & $sMessage
-; Send the request
-Local $sResponse = InetGet($sURL, 1)
-;ConsoleWrite(BinaryToString($sResponse) & @CRLF)
+	Local $sToken = ""
+	Local $sChatID = "-"
+	Local $sURL = "https://api.telegram.org/bot" & $sToken & "/sendMessage?chat_id=" & $sChatID & "&text=" & $sMessage
+	; Send the request
+	Local $sResponse = InetGet($sURL, 1)
+	;ConsoleWrite(BinaryToString($sResponse) & @CRLF)
 EndFunc
 ;=============================== end utility function ========================================================================
 

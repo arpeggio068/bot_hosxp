@@ -1,5 +1,6 @@
 #include <MsgBoxConstants.au3>
 
+Global $gHTTPNode = ObjCreate("WinHttp.WinHttpRequest.5.1")
 Global $oErr = ObjEvent("AutoIt.Error", "_ComErrHandler")
 
 Func _ComErrHandler($oError)
@@ -9,16 +10,16 @@ Func _ComErrHandler($oError)
 EndFunc
 
 Func QueryPostgres1($sSQL)
-    Local $oHTTP = ObjCreate("WinHttp.WinHttpRequest.5.1")
+    ;Local $oHTTP = ObjCreate("WinHttp.WinHttpRequest.5.1")
     Local $sUrl = "http://localhost:3074/query"
     Local $sData = '{"sql":"' & StringReplace($sSQL, '"', '\"') & '"}'
 	; เปิด connection
-    $oHTTP.Open("POST", $sUrl, False)
-    $oHTTP.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
+    $gHTTPNode.Open("POST", $sUrl, False)
+    $gHTTPNode.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
 	; ส่ง request
-    $oHTTP.Send($sData)
+    $gHTTPNode.Send($sData)
     ; ใช้ ResponseBody (Binary) → ADODB.Stream → UTF-8 → Unicode
-    Local $bResponse = $oHTTP.ResponseBody
+    Local $bResponse = $gHTTPNode.ResponseBody
     Local $oStream = ObjCreate("ADODB.Stream")
     $oStream.Type = 1          ; adTypeBinary
     $oStream.Open
@@ -33,22 +34,22 @@ Func QueryPostgres1($sSQL)
 EndFunc
 
 Func QueryPostgres2($sSQL)
-    Local $oHTTP = ObjCreate("WinHttp.WinHttpRequest.5.1")
+    ;Local $oHTTP = ObjCreate("WinHttp.WinHttpRequest.5.1")
     Local $sUrl = "http://localhost:3074/query"
     Local $sData = '{"sql":"' & StringReplace($sSQL, '"', '\"') & '"}'
 
     ; ตั้ง timeout: resolve=5s, connect=5s, send=5s, receive=10s
-    $oHTTP.SetTimeouts(5000, 5000, 5000, 5000)
+    $gHTTPNode.SetTimeouts(5000, 5000, 5000, 5000)
     Local $sResponse = ""
 
     ; ลองส่ง request ถ้า COM error จะไปเข้าที่ _ComErrHandler
-    $oHTTP.Open("POST", $sUrl, False)
-    $oHTTP.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
-    $oHTTP.Send($sData)
+    $gHTTPNode.Open("POST", $sUrl, False)
+    $gHTTPNode.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
+    $gHTTPNode.Send($sData)
 
     ; ถ้าไม่ error → อ่าน ResponseText
     If Not @error Then
-        $sResponse = $oHTTP.ResponseText
+        $sResponse = $gHTTPNode.ResponseText
     EndIf
 
     ; ถ้า response ยังว่าง → ถือว่า timeout/เชื่อมต่อไม่ได้
@@ -145,7 +146,7 @@ Func GetSitFromDb2($iHnVal)
 EndFunc
 
 ; ====== ตัวอย่างใช้งาน ======
-Local $iHnVal = "000131451"
+Local $iHnVal = "000229462"
 
 Local $sit = GetSitFromDb2($iHnVal)
 ConsoleWrite("sit : "&$sit[0]&@CRLF)
