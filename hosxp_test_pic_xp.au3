@@ -98,7 +98,7 @@ Func SetHnBox($hWndXp)
     EndIf
 EndFunc
 
-Func ActHosXp()
+Func ActHosXp1()
    Local $hWndXp = WinGetHandle($sHosXp_Title)
    Sleep(1000)
    WinActivate($hWndXp)
@@ -108,20 +108,20 @@ Func ActHosXp()
    ;SetZeroPrice($hWndXp)
 EndFunc
 
-Func SetZeroPrice($hWndXp)
-		if FindToCon(@ScriptDir&$sOpdPrice1, 354, 572, 950, 771, 0.75) Then
-			FindToClickRt(@ScriptDir&$sOpdPrice1,354, 572, 950, 771, 0.75)
-			Sleep(1200)
-		Else
-			FindToClickRt(@ScriptDir&$sOpdPrice2, 354, 572, 950, 771, 0.75)
-			Sleep(1200)
-		EndIf
-        Sleep(500)
-     TestToClick(@ScriptDir&$sEditPrice,209, 633, 1500, 812, 0.75)   ; ข้อความ Inv Setting
-	 Sleep(1000)
-	 ControlSend($hWndXp, "","" , "q")
-	 Sleep(1000)
+Func ActHosXp2()
+    Local $hWndXp = WinGetHandle($sHosXp_Title)
+    Sleep(200)
+    WinSetState($hWndXp, "", @SW_RESTORE)
+	Sleep(200)
+	WinSetState($hWndXp, "", @SW_MAXIMIZE)
+	Sleep(200)
+    DllCall("user32.dll", "int", "SetForegroundWindow", "hwnd", $hWndXp)
+    Sleep(500)
+	;SetHnBox($hWndXp)
+    ;Sleep(1000)
+    ;SetZeroPrice($hWndXp)
 EndFunc
+
 
 ;Global $sDtMenu = "\Match\xp_dental_menu.png"  ;ไม่ใช้
 Global $sFoundVisit = "\Match\xp_hn_found_visit.png"   ;รูปชายหญิง
@@ -161,9 +161,25 @@ Global $sFinalSave2 =   "\Match\xp_final_save2.png"  ;ภาพติ๊กถ�
 Global $aFinalS2Pos = [420, 275, 761, 499]
 Global $sLastOK =   "\Match\xp_lastOK.png"
 Global $aLastOkPos = [311, 18, 1068, 600]
-_OpenCV_Startup()
-;ActHosXp()
 
+Func SetZeroPrice($hWndXp)
+		if FindToCon(@ScriptDir&$sOpdPrice1, 354, 572, 950, 771, 0.75) Then
+			FindToClickRt(@ScriptDir&$sOpdPrice1,354, 572, 950, 771, 0.75)
+			Sleep(1200)
+		Else
+			FindToClickRt(@ScriptDir&$sOpdPrice2, 354, 572, 950, 771, 0.75)
+			Sleep(1200)
+		EndIf
+        Sleep(500)
+     TestToClick(@ScriptDir&$sEditPrice,209, 633, 1500, 812, 0.75)   ; ข้อความ Inv Setting
+	 Sleep(1000)
+	 ControlSend($hWndXp, "","" , "q")
+	 Sleep(1000)
+EndFunc
+
+_OpenCV_Startup()
+ActHosXp2()
+Sleep(1000)
 ;TestToClick(@ScriptDir&$sFoundVisit, $aFvPos[0], $aFvPos[1], $aFvPos[2], $aFvPos[3], 0.75)   ;รูปชายหญิงที่ตำแหน่งค่อนมาตรงกลาง
 ;TestToClick(@ScriptDir&$sFoundVisit, $aFvFirstPos[0], $aFvFirstPos[1], $aFvFirstPos[2], $aFvFirstPos[3], 0.8)  ;รูปชายหญิงที่อยู่ตำแหน่งซ้ายสุดของจอ
 ;TestToClick(@ScriptDir&$sFiLock, $aFiLockPos[0], $aFiLockPos[1], $aFiLockPos[2], $aFiLockPos[3], 0.75) ;ภาพกล่องข้อความ finance lock
@@ -172,7 +188,7 @@ _OpenCV_Startup()
 ;TestToClick(@ScriptDir&$sCC, $aCcPos[0], $aCcPos[1], $aCcPos[2], $aCcPos[3], 0.80)  ;ข้อความ CC
 ;TestToClick(@ScriptDir&$sRec_allergy_iden, $aRecAllergyPos[0], $aRecAllergyPos[1], $aRecAllergyPos[2], $aRecAllergyPos[3], 0.75)  ;select box การแพ้ยา
 ;TestToClick(@ScriptDir&$sF4, $aF4Pos[0], $aF4Pos[1], $aF4Pos[2], $aF4Pos[3], 0.75)  ;ปุ่มหัตถการ
-;TestToClick(@ScriptDir&$sAddItem, $aAddItemBtnPos[0], $aAddItemBtnPos[1], $aAddItemBtnPos[2], $aAddItemBtnPos[3], 0.80)   ;ปุ่มเพิ่มหัตถการ
+TestToClick(@ScriptDir&$sAddItem, $aAddItemBtnPos[0], $aAddItemBtnPos[1], $aAddItemBtnPos[2], $aAddItemBtnPos[3], 0.80)   ;ปุ่มเพิ่มหัตถการ
 ;TestToClick(@ScriptDir&$sPratomItem, $aItemTxtPos[0],  $aItemTxtPos[1],  $aItemTxtPos[2],  $aItemTxtPos[3], 0.75) ;ข้อความนักเรียน ประถม
 ;TestToClick(@ScriptDir&$sFluorideItem, $aItemTxtPos[0],  $aItemTxtPos[1],  $aItemTxtPos[2],  $aItemTxtPos[3], 0.75) ;ข้อความ ฟลูออไรด์วาร์นิช
 ;TestToClick(@ScriptDir&$sSaveItem, $aSaveItemBtnPos[0], $aSaveItemBtnPos[1], $aSaveItemBtnPos[2], $aSaveItemBtnPos[3], 0.75) ;ปุ่มติ๊กถูกในวงกลมสีเขียว สำหรับบันทึกหัตถการ

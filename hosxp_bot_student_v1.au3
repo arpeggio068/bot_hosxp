@@ -644,12 +644,11 @@ Func SwapXP()
 			ShowSciTE()
 			_OpenCV_Shutdown();Closes DLLs
 			_CppDllClose()
-			;SendTeleGram("Not Found Hos XP")
 		    MsgBox($MB_SYSTEMMODAL, "Warning!","ไม่พบโปรแกรม Hos XP",10)
 			MsgStopServer()
 		    Exit
     EndIf
-	;ConsoleWrite("SwapHosOS"& @CRLF & "Success")
+
 EndFunc
 
 Func SetHnBox($hWndXp)
@@ -666,9 +665,39 @@ EndFunc
 ;=============================== end preload function ======================================================================
 
 ;=============================== start after load exit function =====================================================================
+Func KillFinance1()
+    Local $bFoundFinance = False
+    Local $aList = WinList()
+
+    For $i = 1 To $aList[0][0]
+        Local $hWnd = $aList[$i][1]
+        If $hWnd <> 0 Then
+            Local $sClass = _WinAPI_GetClassName($hWnd)
+            If $sClass = "#32770" And StringInStr($aList[$i][0], "HOSxPMedicationOrderQueueGeneratorForm") Then
+                ConsoleWrite("found popup: " & $hWnd & " -> WinClose/WinKill" & @CRLF)
+                ; ปิด popup
+                WinClose($hWnd)
+                Sleep(500)
+                If WinExists($hWnd) Then
+                    WinKill($hWnd)
+                    ConsoleWrite("WinKill popup" & @CRLF)
+                EndIf
+                $bFoundFinance = True
+                ExitLoop ; เจอแล้วออก loop ทันที
+            EndIf
+        EndIf
+    Next
+
+    If $bFoundFinance Then
+        Return True
+    Else
+        Return False
+    EndIf
+EndFunc
+
 Func FinanceLockExit($hWndXp, $hStartTime, $oLogStudent, $iRow)
 	 Sleep(200)
-	 Send("{ENTER}")
+	 ;Send("{ENTER}")
     Local $hPtNote
 	While True
 		Sleep(1000)
@@ -945,7 +974,7 @@ Func ChiefComp($schclass, $hStartTime, $oLogStudent, $hWndXp, $iRow)
 		Sleep(500)
 	    $a += 1
 	WEnd
-	;Local $clk
+
     If $ccstatus Then
 		 ControlClick($hWndXp, "left", $ccadd)
 	Else
@@ -962,7 +991,7 @@ Func ChiefComp($schclass, $hStartTime, $oLogStudent, $hWndXp, $iRow)
 		Sleep(800)
 		ControlClick($hWndXp, "left",  $ccadd)
 	EndIf
-	Sleep(800)
+	Sleep(500)
 	ExitMaxTime($hStartTime,$oLogStudent,$iRow)
 	Return True
 EndFunc
@@ -989,7 +1018,7 @@ Func Allergy()
 		Send("{DOWN}")
 		Sleep(300)
   EndIf
-  ;TcxCustomInnerTextEdit59
+
 EndFunc
 
 Func AddItem($hStartTime, $oLogStudent, $iRow)
@@ -1131,7 +1160,7 @@ Func SetZeroPrice($hWndXp, $hStartTime, $oLogStudent, $oLogStudentProgress, $iRo
 		 EndIf
 		 $a += 1
 	 WEnd
-	 ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{DELETE}")
+	ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{DELETE}")
 	 Sleep(1000)
 	 ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2", "0")
 	 Sleep(1200)
@@ -1380,7 +1409,8 @@ Func BotLoop()
 		    Sleep(100)
 		    if $hPtNote Then WinKill($hPtNote)
 			Sleep(100)
-		    If FindToCon(@ScriptDir&$sFiLock, $aFiLockPos[0], $aFiLockPos[1], $aFiLockPos[2], $aFiLockPos[3], 0.75) Then
+		    ;If FindToCon(@ScriptDir&$sFiLock, $aFiLockPos[0], $aFiLockPos[1], $aFiLockPos[2], $aFiLockPos[3], 0.75) Then
+			if KillFinance1() Then
 				$bFinanceLock = True
                 FinanceLockExit($hWndXp, $hStartTime, $oLogStudent, $i+1)
 				FileWrite($oLogStudent, "Error Finance R= "&$i+1&", ")
@@ -1496,7 +1526,9 @@ Func BotLoop()
 		ChiefComp($aDental[13] ,$hStartTime, $oLogStudent, $hWndXp, $i+1)
         Allergy()
 		if Number($sBw) > 0 Then
-			CtrlSendDt($hWndXp, "TcxCustomInnerTextEdit59", $sBw)
+			;CtrlSendDt($hWndXp, "TcxCustomInnerTextEdit59", $sBw)
+			Local $hBwCtrl = ControlGetHandle($hWndXp, "", "[CLASS:TcxDBTextEdit; INSTANCE:17]")  ;TcxDBTextEdit17
+			ControlSetText($hWndXp, "", $hBwCtrl, $sBw)
 			Sleep(300)
 		EndIf
 		FileWrite($oLogStudentProgress, "End Record CC And Allergy R= "&$i+1&@CRLF)
