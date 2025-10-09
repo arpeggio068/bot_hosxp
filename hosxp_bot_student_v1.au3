@@ -531,7 +531,7 @@ Func GetSitFromDb1($iHnVal)
 EndFunc
 
 Func GetSitFromDb2($iHnVal, $oFile, $iRow)
-    Local $sSQL = "SELECT ovst.pttype, " & _
+    Local $sSQL = "SELECT ovst.vn, COALESCE(ovst.oqueue, 0) AS oqueue, ovst.pttype, " & _
                   "CASE WHEN COALESCE(ofs.nhso_fee_schedule_type_id, 999) = 101 THEN 'd'  " & _
                   "WHEN COALESCE(ofs.nhso_fee_schedule_type_id, 999) = 102 THEN 'o'  " & _
                   "ELSE 'n' END AS lst,  " & _
@@ -547,6 +547,7 @@ Func GetSitFromDb2($iHnVal, $oFile, $iRow)
                   ") AS pbw ON pbw.hn = ovst.hn AND pbw.flag_last_vn = '1' " & _
                   "WHERE ovst.hn = '" & $iHnVal & "' " & _
                   "AND ovst.vstdate = CURRENT_DATE " & _
+				  "ORDER BY ovst.vn DESC " & _
                   "LIMIT 1;"
 
     Local $result = QueryPostgres2($sSQL)
@@ -558,11 +559,19 @@ Func GetSitFromDb2($iHnVal, $oFile, $iRow)
         MsgBox(16, "Error", "API ไม่สามารถเชื่อมต่อฐานข้อมูลได้:" & @CRLF & $result)
         exit(0)
     EndIf
-    ; --- ปกติ ดึงค่าจาก response ---
+
+	 If $result = "[]" Then
+        Local $ArrayDb[3]
+        $ArrayDb[0] = "888"
+        $ArrayDb[1] = "0"
+        $ArrayDb[2] = "0"
+        Return $ArrayDb
+    EndIf
+
     Local $pttype = StringRegExpReplace($result, '.*"pttype":"(.*?)".*', '\1')
     Local $lst    = StringRegExpReplace($result, '.*"lst":"(.*?)".*', '\1')
     Local $bw     = StringRegExpReplace($result, '.*"bw":("?)(\d+)\1.*', '\2')
-
+	 Local $oqueue  = StringRegExpReplace($result, '.*"oqueue":("?)(\d+)\1.*', '\2')
     ; --- ตั้งค่า default ถ้า response ว่าง ---
     If $result = "[]" Or $pttype = "" Or $pttype = $result Then $pttype = "888"
     ; --- ต่อท้าย lst ถ้าเป็น 25/47 และ lst มีค่า d/n/o ---
@@ -571,9 +580,10 @@ Func GetSitFromDb2($iHnVal, $oFile, $iRow)
         $pttype &= $lst
     EndIf
 
-    Local $ArrayDb[2]
+    Local $ArrayDb[3]
     $ArrayDb[0] = $pttype
     $ArrayDb[1] = $bw
+    $ArrayDb[2] = $oqueue
 
     Return $ArrayDb
 EndFunc
@@ -1338,21 +1348,45 @@ Func BotLoop()
 		Local $bFinanceLock = False
 	    Local $bSitKrg = False
 		Local $sBw = "0"
+		Local $sQueue = "0"
 		Local $iCnt = 0
 		Local $sSit = ""
    For $i = $iStartRow - 1 To $iEndRow - 1  ;UBound($aResult, 1) - 1
-	  Sleep(800)
+	  Sleep(500)
 	  Local $hnClass  = "TcxCustomInnerTextEdit2"
 	  Local $iHnVal = $aResult[$i][4]
+	  FileWrite($oLogStudentProgress, "Start Get dbData R= "&$i+1&@CRLF)
+	  Sleep(100)
+	  Local $dbData = GetSitFromDb2($iHnVal, $oLogStudent, $i+1)
+	  Sleep(100)
+		  $sSit = $dbData[0]
+		  $sBw = $dbData[1]
+	      $sQueue = $dbData[2]
+	  Sleep(100)
+	  FileWrite($oLogStudentProgress, "End Get dbData R= "&$i+1&@CRLF)
 	  ContXp2()
-	  ControlClick($hWndXp, "left", $hnClass)
-	  Sleep(1000)
-	  ContXp2()
-	  CtrlSend($hWndXp,$hnClass,$iHnVal)
-	  Sleep(1000)
-	  ContXp2()
-      Send("{ENTER}")
 
+	  if Number($sQueue) < 1 Then
+          FileWrite($oLogStudent, "Error Visit1 R= "&$i+1&", ")
+		  SendTeleGram("Error Visit1 R= "&$i+1)
+		  Sleep(200)
+		  ContinueLoop
+	  EndIf
+
+	  Local $hQCtrl = ControlGetHandle($hWndXp, "", "[CLASS:TcxTextEdit; INSTANCE:1]")
+	  ControlSetText($hWndXp, "", $hQCtrl, $sQueue)
+	  Sleep(500)
+	  ControlClick($hWndXp, "", $hQCtrl, "left")
+	  Sleep(700)
+	  ControlSend($hWndXp, "", $hQCtrl, "{ENTER}")
+;~ 	  Send("{ENTER}")
+;~ 	  ControlClick($hWndXp, "left", $hnClass)
+;~ 	  Sleep(1000)
+;~ 	  ContXp2()
+;~ 	  CtrlSend($hWndXp,$hnClass,$iHnVal)
+;~ 	  Sleep(1000)
+;~ 	  ContXp2()
+;~       Send("{ENTER}")
 	  Local $hStartTime = TimerInit() ;เริ่มจับเวลาบันทึกข้อมูล
 	  Sleep(1000)
 	  FileWrite($oLogStudentProgress, "Start Record R= "&$i+1&@CRLF)
@@ -1394,8 +1428,8 @@ Func BotLoop()
 	  WEnd
 
 	   If $a = 10 Then
-		    FileWrite($oLogStudent, "Error Visit R= "&$i+1&", ")
-			SendTeleGram("Error Visit R= "&$i+1)
+		    FileWrite($oLogStudent, "Error Visit2 R= "&$i+1&", ")
+			SendTeleGram("Error Visit2 R= "&$i+1)
 			Sleep(200)
 		    ContinueLoop  ;skip this data when no visit
 	   EndIf
@@ -1456,16 +1490,6 @@ Func BotLoop()
 	   ContXp2()
 	   ;Local $ttest = TimerDiff($hStartTime)
 	   ;MsgBox(0,"time1", $ttest, 2)
-	   FileWrite($oLogStudentProgress, "Start Get Sit Text R= "&$i+1&@CRLF)
-
-	      Sleep(200)
-		  Local $dbData = GetSitFromDb2($iHnVal, $oLogStudent, $i+1)
-		  $sSit = $dbData[0]
-		  $sBw = $dbData[1]
-		  Sleep(300)
-
-        FileWrite($oLogStudentProgress, "End Get Sit Text R= "&$i+1&@CRLF)
-        ContXp2()
 		FileWrite($oLogStudentProgress, "Start Click Open Dental Loop R= "&$i+1&@CRLF)
 		Local $clk_dt
 		While True
@@ -1617,6 +1641,7 @@ Func BotLoop()
 
 		$sSit = ""
 		$sBw = "0"
+		$sQueue = "0"
 		$bTodayAppoint = False
 		$bFinanceLock = False
 		$bDentistLock = False

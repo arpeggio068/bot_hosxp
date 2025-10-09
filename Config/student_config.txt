@@ -1,8 +1,8 @@
-D:\schooldatasheet\sum2568\dental_songpnong_match_20250922.xlsx
+D:\schooldatasheet\sum2568\dental_yesoo_match_20251009.xlsx
 data2
-ออกหน่วยตรวจฟัน โรงเรียนบ้านสองพี่น้อง 27 ส.ค. 2568
+ออกหน่วยตรวจฟัน โรงเรียนพระกุมารเยซูเชียงของ 8 ก.ค. 2568
 1
-81
-113
+12
+27
 2000
-2
+1
