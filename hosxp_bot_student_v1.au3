@@ -221,27 +221,6 @@ Func CtrlSendDt($hWnd,$sClass,$iVal)
 	Sleep(200)
 EndFunc
 
-Func TestToClick($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, $x2 = 51, $y2 = 400, $tol = 0.75)
- Local Const $kScreen = 1.25 ;constant for screen size 125% = 1.25  for screen size 100% = 1
- Local Const $kPosition = 5  ;constant for screen size 125% position. Set $kPosition = 0 if screen size = 100%
- Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
- $realX = 0
- $realY = 0
- If $kPosition > 0 Then
-	$realX = $Match[4] - ($Match[4]/$kPosition)
-    $realY = $Match[5] - ($Match[5]/$kPosition)
- Else
-	$realX = $Match[4]
-    $realY = $Match[5]
- EndIf
- ;_ArrayDisplay($Match1)
- If $Match[0] > 0 Then
-	MouseMove($realX,$realY,10)
-	;MouseClick($MOUSE_CLICK_LEFT, $realX, $realY, 1, 2)
- EndIf
-
-EndFunc
-
  Func FindToClick($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, $x2 = 51, $y2 = 400, $tol = 0.75)
  Local Const $kScreen = 1.25 ;constant for screen size 125% = 1.25  for screen size 100% = 1
  Local Const $kPosition = 5  ;constant for screen size 125% position. Set $kPosition = 0 if screen size = 100%
@@ -1469,22 +1448,25 @@ Func BotLoop()
 				Sleep($iSleepAfterLoad)
 				ExitLoop
 			Else
-				Sleep(500)
+				Sleep(200)
 			EndIf
 			ExitMaxTime($hStartTime,$oLogStudent,$i+1)
 	   WEnd
 	   ;== end hos xp loading loop ===================================
 	   FileWrite($oLogStudentProgress, "End Init Loading Loop R= "&$i+1&@CRLF)
 
-	   If  $bTodayAppoint Then ContinueLoop
-	   If  $bFinanceLock Then  ContinueLoop
+	   ;If  $bTodayAppoint Then ContinueLoop
+	   If  $bFinanceLock Then
+		   $bFinanceLock = False
+		   ContinueLoop
+       EndIf
 
 	   If  $bDentistLock Then
             Sleep(100)
 			FileWrite($oLogStudent, "Error Locked R= "&$i+1&", ")
 			SendTeleGram("Error Locked R= "&$i+1)
-			;SwapXP()
-		    Sleep(600)
+		    Sleep(300)
+			$bDentistLock = False
 		    ContinueLoop  ;skip this data when other dentist lock
 	   EndIf
 	   ContXp2()
@@ -1550,7 +1532,6 @@ Func BotLoop()
 		ChiefComp($aDental[13] ,$hStartTime, $oLogStudent, $hWndXp, $i+1)
         Allergy()
 		if Number($sBw) > 0 Then
-			;CtrlSendDt($hWndXp, "TcxCustomInnerTextEdit59", $sBw)
 			Local $hBwCtrl = ControlGetHandle($hWndXp, "", "[CLASS:TcxDBTextEdit; INSTANCE:17]")  ;TcxDBTextEdit17
 			ControlSetText($hWndXp, "", $hBwCtrl, $sBw)
 			Sleep(300)
