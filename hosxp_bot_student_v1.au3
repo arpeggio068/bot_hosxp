@@ -1412,6 +1412,7 @@ Func BotLoop()
 			Sleep(200)
 		    ContinueLoop  ;skip this data when no visit
 	   EndIf
+
 	  FileWrite($oLogStudentProgress, "Exit First PopUp Loop R= "&$i+1&@CRLF)
 	  Sleep(50)
 	  FileWrite($oLogStudentProgress, "Start Init Loading Loop R= "&$i+1&@CRLF)
