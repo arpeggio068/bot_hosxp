@@ -187,17 +187,17 @@ $ArraySitKrg[0] = "01"  ; ขรก. (องค์กรปกครองส่
 $ArraySitKrg[1] = "55"  ; ขรก.กรมบัญชีกลาง
 $ArraySitKrg[2] = "34"  ; ขรก.กรุงเทพมหานคร
 $ArraySitKrg[3] = "35"  ; ขรก.กกต.
-$ArraySit[4] = "17o"  ;ครอบครัวอสม นอกเขต  o=op anywhere ต่างจังหวัด
-$ArraySit[5] = "19o"  ;ครอบครัวผู้นำชุมชน นอกเขต  o=op anywhere ต่างจังหวัด
-$ArraySit[6] = "21o"  ;ครอบครัวทหารผ่านศึก นอกเขต  o=op anywhere ต่างจังหวัด
-$ArraySit[7] = "28o"  ;ทหารผ่านศึก นอกเขต  o=op anywhere ต่างจังหวัด
-$ArraySit[8] = "30o"  ;พระ นอกเขต  o=op anywhere ต่างจังหวัด
-$ArraySit[9] = "32o"  ;สูงอายุ นอกเขต  o=op anywhere ต่างจังหวัด
-$ArraySit[10] = "37o"  ;พิการ นอกเขต  o=op anywhere ต่างจังหวัด
-$ArraySit[11] = "44o"  ;อสม นอกเขต  o=op anywhere ต่างจังหวัด
-$ArraySit[12] = "50o"  ;12-59 นอกเขต  o=op anywhere ต่างจังหวัด
-$ArraySit[13] = "59o"  ;ผู้นำชุมชน นอกเขต  o=op anywhere ต่างจังหวัด
-$ArraySit[14] = "99o"  ;รายได้น้อย นอกเขต  o=op anywhere ต่างจังหวัด
+$ArraySitKrg[4] = "17o"  ;ครอบครัวอสม นอกเขต  o=op anywhere ต่างจังหวัด
+$ArraySitKrg[5] = "19o"  ;ครอบครัวผู้นำชุมชน นอกเขต  o=op anywhere ต่างจังหวัด
+$ArraySitKrg[6] = "21o"  ;ครอบครัวทหารผ่านศึก นอกเขต  o=op anywhere ต่างจังหวัด
+$ArraySitKrg[7] = "28o"  ;ทหารผ่านศึก นอกเขต  o=op anywhere ต่างจังหวัด
+$ArraySitKrg[8] = "30o"  ;พระ นอกเขต  o=op anywhere ต่างจังหวัด
+$ArraySitKrg[9] = "32o"  ;สูงอายุ นอกเขต  o=op anywhere ต่างจังหวัด
+$ArraySitKrg[10] = "37o"  ;พิการ นอกเขต  o=op anywhere ต่างจังหวัด
+$ArraySitKrg[11] = "44o"  ;อสม นอกเขต  o=op anywhere ต่างจังหวัด
+$ArraySitKrg[12] = "50o"  ;12-59 นอกเขต  o=op anywhere ต่างจังหวัด
+$ArraySitKrg[13] = "59o"  ;ผู้นำชุมชน นอกเขต  o=op anywhere ต่างจังหวัด
+$ArraySitKrg[14] = "99o"  ;รายได้น้อย นอกเขต  o=op anywhere ต่างจังหวัด
 
 ;=============================== start utility function ========================================================================
 Func Hkey()
@@ -1462,8 +1462,8 @@ Func BotLoop()
 		ContXp2()
 		FileWrite($oLogStudentProgress, "Start Record CC And Allergy R= "&$i+1&@CRLF)
 		Local $aDetail[2]
-		$aDetail[0] = $aDental[0] ; cup
-		$aDetail[1] = $aDental[16] ; date exam
+		$aDetail[0] =$aResult[$i][0]  ; cup
+		$aDetail[1] = $aResult[$i][16]  ; date exam
 		ChiefComp($aDetail ,$hStartTime, $oLogStudent, $hWndXp, $i+1)
         Allergy()
 		if Number($sBw) > 0 Then
